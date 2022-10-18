@@ -472,4 +472,39 @@ class Test_ClassTwoFactorCore extends WP_UnitTestCase {
 		);
 	}
 
+	/**
+	 * Bumping the counter should increase it
+	 *
+	 * @covers Two_Factor_Core::bump_failed_attempts()
+	 */
+	public function test_bump_failed_attempts() {
+		$user = self::factory()->user->create_and_get();
+
+		$this->assertSame( 0, (int) get_transient( Two_Factor_Core::FAILED_ATTEMPTS_TRANSIENT . $user->ID ) );
+		Two_Factor_Core::bump_failed_attempts( $user->ID );
+		$this->assertSame( 1, (int) get_transient( Two_Factor_Core::FAILED_ATTEMPTS_TRANSIENT . $user->ID ) );
+		Two_Factor_Core::bump_failed_attempts( $user->ID );
+		$this->assertSame( 2, (int) get_transient( Two_Factor_Core::FAILED_ATTEMPTS_TRANSIENT . $user->ID ) );
+	}
+
+	/**
+	 * Resetting a password should change the password and notify the user and admin.
+	 *
+	 * @covers Two_Factor_Core::reset_compromised_password()
+	 * @covers Two_Factor_Core::notify_user_password_reset()
+	 * @covers Two_Factor_Core::notify_admin_user_password_reset()
+	 */
+	public function test_reset_compromised_password() {
+		$mailer      = tests_retrieve_phpmailer_instance();
+		$user        = self::factory()->user->create_and_get();
+		$old_hash    = $user->user_pass;
+		$admin_email = get_option( 'admin_email' );
+
+		Two_Factor_Core::reset_compromised_password( $user );
+		$user = get_user_by( 'id', $user->ID );
+
+		$this->assertNotSame( $old_hash, $user->user_pass );
+		$this->assertContains( $user->user_email, $mailer->mock_sent[0]['to'][0] );
+		$this->assertContains( $admin_email, $mailer->mock_sent[1]['to'][0] );
+	}
 }
