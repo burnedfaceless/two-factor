@@ -36,11 +36,14 @@ class Two_Factor_Core {
 	const USER_META_NONCE_KEY = '_two_factor_nonce';
 
 	/**
-	 * The user meta key for tracking failed 2nd-factor authentication attempts.
+	 * The transient key for tracking failed 2nd-factor authentication attempts.
+	 *
+	 * When used, the user ID should be appended to the end, so that it looks like
+	 * `_two_factor_failed_attempts_user_514` for the user with ID `514`.
 	 *
 	 * @type string
 	 */
-	const USER_META_FAILED_ATTEMPTS_KEY = '_two_factor_failed_attempts';
+	const FAILED_ATTEMPTS_TRANSIENT = '_two_factor_failed_attempts_user_';
 
 	/**
 	 * URL query paramater used for our custom actions.
@@ -921,7 +924,7 @@ class Two_Factor_Core {
 			exit;
 		}
 
-		delete_user_meta( $user->ID, self::USER_META_FAILED_ATTEMPTS_KEY );
+		delete_transient( self::FAILED_ATTEMPTS_TRANSIENT . $user->ID );
 		self::delete_login_nonce( $user->ID );
 
 		$rememberme = false;
@@ -972,9 +975,9 @@ class Two_Factor_Core {
 	 * @return int
 	 */
 	public static function bump_failed_attempts( $user_id ) {
-		$failed_attempts = (int) get_user_meta( $user_id, self::USER_META_FAILED_ATTEMPTS_KEY, true );
+		$failed_attempts = (int) get_transient( self::FAILED_ATTEMPTS_TRANSIENT . $user_id );
 
-		update_user_meta( $user_id, self::USER_META_FAILED_ATTEMPTS_KEY, ++$failed_attempts );
+		set_transient( self::FAILED_ATTEMPTS_TRANSIENT . $user_id, ++$failed_attempts, WEEK_IN_SECONDS );
 
 		return $failed_attempts;
 	}
@@ -994,7 +997,7 @@ class Two_Factor_Core {
 
 		self::reset_compromised_password( $user );
 		self::delete_login_nonce( $user->ID );
-		delete_user_meta( $user->ID, self::USER_META_FAILED_ATTEMPTS_KEY );
+		delete_transient( self::FAILED_ATTEMPTS_TRANSIENT . $user->ID );
 
 		$error = new WP_Error(
 			'too_many_attempts', '
