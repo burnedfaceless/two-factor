@@ -1089,7 +1089,7 @@ class Two_Factor_Core {
 
 			To protect their account, the password has automatically been reset, and they have been notified that they will need to create a new one.
 
-			If you do not wish to receive these notifications, you can disable them with the `two_factor_notify_admin_password_reset` filter. See %3$s for more information.
+			If you do not wish to receive these notifications, you can disable them with the `two_factor_notify_admin_user_password_reset` filter. See %3$s for more information.
 
 			Thank you',
 			esc_html( $user->user_login ),
